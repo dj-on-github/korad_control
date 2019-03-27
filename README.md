@@ -46,3 +46,6 @@ optional arguments:
                         output to stdout
 ```
 
+Invoking it without any parameters will get it to interrogate the PSU for it's settings and report them. This can be forced with the --status option.
+
+
