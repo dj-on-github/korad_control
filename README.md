@@ -7,8 +7,11 @@ This has been tested on a Rasberry-Pi with a Korad KA6003P.
 
 It steals liberally from https://github.com/Tamagotono/Korad-KA6003P-Software . But that is a Tk GUI application and I wanted a CLI. The firmware on the KA6003P is buggy and often gives spurious data on the wire. I've added some robustification to deal with that.
 
+This is version 0. It may be imperfect in several ways.
+
 Invoking with -h gives:
 
+```
 # ./korad_control.py -h
 usage: korad_control.py [-h] [-s] [-n] [--verbose] [-d DEVICE] [-v VOLTAGE]
                         [-i CURRENT] [--output OUTPUT] [--charge]
@@ -41,5 +44,5 @@ optional arguments:
   -o OUTPUT_FILE, --output_file OUTPUT_FILE
                         Filename prefix to put the results in. Otherwise
                         output to stdout
-
+```
 
