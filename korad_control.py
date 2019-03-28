@@ -76,13 +76,15 @@ def Get_I_Set(PS):
     print_sent(REQUEST_SET_CURRENT)
     I_set = PS.read(5)
     print_got(I_set)
-    if (I_set == b''):
-        I_set = b'0'
-    I_set = float(I_set)
-    #print(str('Current is set to ')+str(I_set))
-    PS.flushInput()
+    #if (I_set == b''):
+    #    I_set = b'0'
+    try:
+        I_set = float(I_set)
+        PS.flushInput()
+    except:
+        print("Bad response to REQUEST_SET_CURRENT : ",I_set)
+        return(-1.0)
     return(I_set)
-
 
 def Get_V_Set(PS):
     PS.flushInput()
@@ -91,45 +93,62 @@ def Get_V_Set(PS):
     #try:
     vs = PS.read(5)
     print_got(vs)
-    astr = vs.decode()
-    V_set = float(astr)
-    #except:
-    #    print("Funny VS = ",vs)
-    #    V_set = -1.0
-    #print(str('Voltage is set to ')+str(V_set))
-    PS.flushInput()
+    try:
+        astr = vs.decode()
+        V_set = float(astr)
+    except:
+        print("Bad response to REQUEST_SET_VOLTAGE : ",vs)
+        PS.flushInput()
+        v_set = -1.0
+        return v_set
+    else:
+        PS.flushInput()
     return(V_set)
 
 
 def Get_Status(PS):
-    PS.flushInput()
-    PS.write(REQUEST_STATUS)  # Request the status of the PS
-    print_sent(REQUEST_STATUS)
-    Stat = PS.read(1)
-    print_got(Stat)
-    PS.flushInput()
-    try:
-        astr = Stat.decode()
-        x = ord(astr[0])
-    except:
-        print("Bad reponse :",astr)
-        x = 0x00
-    os=""
-    if x & 0x40 == 0x40:
-        os += "Output ON "
-    else:
-        os += "Output OFF"
-    
-    if x & 0x20 == 0x20:
-        os += ", OVP/OCP ON "
-    else:
-        os += ", OVP/OCP OFF"
+    iteration = 10
+    while True:
+        PS.flushInput()
+        PS.write(REQUEST_STATUS)  # Request the status of the PS
+        print_sent(REQUEST_STATUS)
+        Stat = PS.read(1)
+        print_got(Stat)
+        PS.flushInput()
+        try:
+            astr = Stat.decode("utf-8")
+            x = ord(astr[0])
+        except:
+            print("Bad reponse to REQUEST_STATUS : ",Stat)
+            x = 0x00
+            worked = False
+            iteration = iteration - 1
+        else:
+            worked = True
+            break
+        
+        if iteration == 0:
+            print("  Too many failures, giving up status")
+            break
 
-    if x & 0x01 == 0x01:
-        os += ", CV "
-    else:
-        os += ", CC"
+    if worked:
+        os=""
+        if x & 0x40 == 0x40:
+            os += "Output ON "
+        else:
+            os += "Output OFF"
+        
+        if x & 0x20 == 0x20:
+            os += ", OVP/OCP ON "
+        else:
+            os += ", OVP/OCP OFF"
 
+        if x & 0x01 == 0x01:
+            os += ", CV "
+        else:
+            os += ", CC"
+    else:
+        os = "Bad Response"
     
 
     #print('Status = '+Stat)
@@ -179,7 +198,7 @@ def SetCurrent(PS,Current):
     Output_string = SET_CURRENT + bytes(Current, "utf-8")
     PS.write(Output_string)
     print_sent(Output_string)
-    print(Output_string)
+    #print(Output_string)
     PS.flushInput()
     time.sleep(0.2)
     VeriAmp = "{:2.3f}".format(float(Get_I_Set(PS)))
@@ -202,15 +221,19 @@ def V_Actual(PS):
     print_sent(REQUEST_ACTUAL_VOLTAGE)
     time.sleep(0.015)
     V_actual = PS.read(5)
-    V_actual_str = V_actual.decode("utf-8")
-    #print(V_actual)
-    #print(V_actual_str)
-
-    #print("A_actual string =",V_actual)
-    if (V_actual == b''):
+    print_got(V_actual)
+    try:
+        V_actual_str = V_actual.decode("utf-8")
+    except:
+        V_actual_str = "BAD V_Actual encoding"+str(V_actual)
+        print(V_actual_str)
+        PS.flushInput()
+        return(-1.0)
+    else:
+        if (V_actual == b''):
             V_actual = b'0.0'  # deal with the occasional NULL from PS
-    V_actual = float(V_actual.decode())
-    PS.flushInput()
+        V_actual = float(V_actual.decode())
+        PS.flushInput()
     return(V_actual)
 
 
@@ -227,11 +250,19 @@ def I_Actual(PS):
     time.sleep(0.2)
     I_actual = PS.read(5)
     print_got(I_actual)
-    #print("I_actual string =",I_actual)
-    if (I_actual == b''):
-            I_actual = b'0'  # deal with the occasional NULL from PS
-    I_actual = float(I_actual)
-    PS.flushInput()
+
+    try:
+        I_actual_str = I_actual.decode("utf-8")
+    except:
+        I_actual_str = "BAD I_Actual encoding"+str(I_actual)
+        print(I_actual_str)
+        PS.flushInput()
+        return(-1.0)
+    else:
+        if (I_actual == b''):
+            I_actual = b'0.0'  # deal with the occasional NULL from PS
+        I_actual = float(I_actual.decode())
+        PS.flushInput()
     return(I_actual)
 
 
@@ -404,10 +435,15 @@ if do_status or args.status:
     VS = Get_V_Set(PS)
     IS = Get_I_Set(PS)
     status = Get_Status(PS)
-    print("PSID = ",str(PSID.decode()))
-    print("V = {0:1.3f}V  I = {1:1.3f}A  Vsetting={2:1.3f}  Isetting={3:1.3f} status={4:s}".format(V,I,VS,IS,str(status)))
+    try:
+        psidstr=PSID.decode()
+        print("PSID = ",psidstr)
+        print("V = {0:1.3f}V  I = {1:1.3f}A  Vsetting={2:1.3f}  Isetting={3:1.3f} status={4:s}".format(V,I,VS,IS,str(status)))
+    except:
+        print("PSID = Bad response to REQUEST_ID : ",PSID)
+
     if do_status == True:
-        PS.closr()
+        PS.close()
         quit()
 
 if args.charge == True:
