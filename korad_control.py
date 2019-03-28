@@ -261,7 +261,7 @@ def SetOVP(PS,OnOff):
     #                   stopbits=1,
     #                   timeout=1)
     PS.flushInput()
-    Output_string = SET_OVP + OnOff
+    Output_string = SET_OVP + bytes(OnOff, "utf-8")
     PS.write(Output_string)
     print_sent(Output_string)
     PS.flushInput()
@@ -276,7 +276,7 @@ def SetOCP(PS,OnOff):
     #                   stopbits=1,
     #                   timeout=1)
     PS.flushInput()
-    Output_string = SET_OCP + OnOff
+    Output_string = SET_OCP + bytes(OnOff, "utf-8")
     PS.write(Output_string)
     print_sent(Output_string)
     PS.flushInput()
@@ -297,8 +297,8 @@ parser.add_argument('--verbose', action='store_true', default=False, help='Print
 parser.add_argument('-d','--device', default=None,help='Select the serial device. Defaults to searching for /dev/ttyUSB* or /dev/ttyACM*')
 parser.add_argument('-v','--voltage', type=float,default=None, help='Voltage to Set')
 parser.add_argument('-i','--current', type=float,default=None, help='Current limit to Set')
-#parser.add_argument('--ocp', type=str,default=None, help='Enable or disable Over Current Protection with on or off, or 1 or 0')
-#parser.add_argument('--ovp', type=str,default=None, help='Enable or disable Over Voltage Protection with on or off, or 1 or 0')
+parser.add_argument('--ocp', type=str,default=None, help='Enable or disable Over Current Protection with on or off, or 1 or 0')
+parser.add_argument('--ovp', type=str,default=None, help='Enable or disable Over Voltage Protection with on or off, or 1 or 0')
 parser.add_argument('--output', type=str,default=None, help='Enable or disable power output with on or off, or 1 or 0')
 parser.add_argument('--charge', action='store_true',default=None, help='Charge a LiIon type battery and monitor current and voltage. Use with --imin and set voltage to the charging CV and current to charging CC for the battery being charged.')
 parser.add_argument('--imin', type=float,default=0.01, help='Minimum charging current at which to cancel the charge and turn off the output. Default is 0.01A.')
@@ -374,6 +374,26 @@ if args.output != None:
         do_status = False
     elif args.output == "0" or args.output.lower()=="off":
         SetOP(PS,'0')
+        time.sleep(1)
+        do_status = False
+
+if args.ovp != None:
+    if args.output == "1" or args.output.lower()=="on":
+        SetOVP(PS,'1')
+        time.sleep(1)
+        do_status = False
+    elif args.output == "0" or args.output.lower()=="off":
+        SetOVP(PS,'0')
+        time.sleep(1)
+        do_status = False
+
+if args.ocp != None:
+    if args.output == "1" or args.output.lower()=="on":
+        SetOCP(PS,'1')
+        time.sleep(1)
+        do_status = False
+    elif args.output == "0" or args.output.lower()=="off":
+        SetOCP(PS,'0')
         time.sleep(1)
         do_status = False
 
